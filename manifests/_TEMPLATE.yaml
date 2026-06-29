@@ -1,0 +1,37 @@
+# CapabilityManifest template — copy this to define a new robot model (D3).
+# A device package ships one of these + a BaseExecutorAdapter subclass; the brain
+# (mindloop) changes nothing. Load with: bodylink.load_manifest("path/to/this.yaml")
+#
+# Two tiers:
+#   body_profile  — hardware identity (executor-facing; brain does NOT read joints/
+#                   sensors/gripper, those live below L2). base_type drives nothing
+#                   in the brain — a bipedal and a wheeled humanoid differ to the
+#                   brain only in `verbs`.
+#   verbs         — what the brain may plan (the D3 gate). Only declared verbs are
+#                   dispatched; a skill card using an undeclared verb is dropped.
+
+profile_id: my_robot                  # unique id
+display_name: My Robot Co. Model X
+dof: 24
+base_type: legged                     # wheeled | legged | fixed
+joints: {}                            # optional, executor-facing
+sensors: {}                           # optional
+gripper: {}                           # optional
+
+verbs:
+  - name: navigate
+    params: [target]
+  - name: grasp
+    params: [target]
+  - name: place
+    params: [target, location]
+  - name: detect
+  - name: open_door
+    params: [target]
+  - name: charging
+  - name: operate_appliance
+    params: [target, program]
+    appliance_types: [washer, stove, microwave, dishwasher]
+  # add model-specific verbs here, e.g. a legged body:
+  # - name: climb_stair
+  #   params: [target]

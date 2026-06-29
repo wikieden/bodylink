@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bodylink"
+version = "0.1.0a0"
+description = "The execution-adapter layer for Chronotope — ExecutorAdapter reference fill (MockBody + reference manifests). Each robot is a device package filling the brain's executor seam."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [{ name = "wikieden" }]
+dependencies = ["mindloop"]
+
+[project.optional-dependencies]
+# Physics sim lives behind [sim] (D5) — not a core dependency. Genesis is the
+# first backend (`bodylink.sim`), cross-platform: verified on a Linux RTX PRO
+# 6000 host and on macOS Apple Silicon (CPU backend). genesis-world needs torch
+# but does not pin it (the user picks cpu/cuda), so list it here too (per B2R).
+# Heavy; install on demand: `uv sync --extra sim`. Isaac slots in later.
+sim = ["genesis-world>=0.4.7", "torch>=2.0"]
+# Load a vendor CapabilityManifest from a *.yaml file (load_manifest("path.yaml")).
+# Builtin profiles (g1d/h1) need no dep; this is only for external YAML manifests.
+manifests = ["pyyaml"]
+dev = ["pytest", "pytest-cov", "ruff", "pyright", "pyyaml"]
+
+[project.urls]
+Brain = "https://github.com/wikieden/mindloop"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bodylink"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "PERF", "RUF"]
+
+[tool.pyright]
+include = ["src/bodylink"]
+pythonVersion = "3.10"
+typeCheckingMode = "standard"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]

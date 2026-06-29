@@ -1,0 +1,23 @@
+# Example vendor manifest — Fourier GR-1, a bipedal/legged humanoid.
+# Demonstrates adding a 3rd model with ZERO code: just this file, loaded via
+# bodylink.load_manifest(".../fourier_gr1.yaml"). Numbers are illustrative.
+profile_id: fourier_gr1
+display_name: Fourier GR-1
+dof: 40
+base_type: legged
+verbs:
+  - name: navigate
+    params: [target]
+  - name: grasp
+    params: [target]
+  - name: place
+    params: [target, location]
+  - name: detect
+  - name: open_door
+    params: [target]
+  - name: charging
+  - name: operate_appliance
+    params: [target, program]
+    appliance_types: [washer, stove, microwave, dishwasher]
+  - name: climb_stair
+    params: [target]
