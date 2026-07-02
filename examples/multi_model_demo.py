@@ -31,7 +31,7 @@ from mindloop import (
     SkillLibrary,
     TaskStatus,
 )
-from tempomem import Detection, SpatialMemory
+from tempomem import Detection, TempoMem
 
 from bodylink import load_manifest
 
@@ -80,8 +80,8 @@ def _feat(seed: int) -> np.ndarray:
     return v / np.linalg.norm(v)
 
 
-def _scene() -> SpatialMemory:
-    mem = SpatialMemory.open(":memory:", embedding_dim=_DIM)
+def _scene() -> TempoMem:
+    mem = TempoMem.open(":memory:", embedding_dim=_DIM)
     mem.add_detections(
         [
             Detection("washer", _feat(1), (2.0, 0.0, 0.5), (1.8, -0.3, 0.0), (2.2, 0.3, 1.0)),

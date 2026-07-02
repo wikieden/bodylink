@@ -29,7 +29,7 @@ from mindloop import (
     SkillLibrary,
     TaskStatus,
 )
-from tempomem import Detection, SpatialMemory
+from tempomem import Detection, TempoMem
 
 from bodylink import SceneObject, load_manifest, make_sim_backend
 
@@ -79,9 +79,9 @@ def _feat(seed: int) -> np.ndarray:
     return v / np.linalg.norm(v)
 
 
-def _scene_memory() -> tuple[SpatialMemory, dict[int, str], list[SceneObject]]:
+def _scene_memory() -> tuple[TempoMem, dict[int, str], list[SceneObject]]:
     """Build the scene graph; return it plus the node-id→name map + sim objects."""
-    mem = SpatialMemory.open(":memory:", embedding_dim=_DIM)
+    mem = TempoMem.open(":memory:", embedding_dim=_DIM)
     for i, (name, c) in enumerate(_OBJECTS.items(), start=1):
         lo = (c[0] - 0.1, c[1] - 0.1, c[2] - 0.1)
         hi = (c[0] + 0.1, c[1] + 0.1, c[2] + 0.1)
