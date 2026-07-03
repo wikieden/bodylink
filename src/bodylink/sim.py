@@ -169,8 +169,14 @@ class GenesisSimBackend:
 
     def _approach(self, node_ids: tuple[int, ...]) -> None:
         """Move the robot toward the first mapped target object (coarse), else idle."""
-        target = next((self._entities[self._node_map[n]] for n in node_ids
-                       if n in self._node_map and self._node_map[n] in self._entities), None)
+        target = next(
+            (
+                self._entities[self._node_map[n]]
+                for n in node_ids
+                if n in self._node_map and self._node_map[n] in self._entities
+            ),
+            None,
+        )
         if target is None:
             return
         dst = self._read_xy(target.get_pos())

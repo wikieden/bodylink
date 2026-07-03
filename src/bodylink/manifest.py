@@ -46,6 +46,22 @@ _COMMON_VERBS: tuple[dict[str, Any], ...] = (
         "params": ["target", "program"],
         "appliance_types": ["washer", "stove", "microwave", "dishwasher"],
     },
+    # Task-family verbs (TASK-FAMILIES §1-§5, build-order step 1). `deliver` is
+    # planner-facing only — the compiler expands it to navigate+offer (D-D, T3)
+    # and never dispatches it as-is.
+    {"name": "present", "params": ["target"]},
+    {"name": "wipe", "params": ["target"]},
+    {"name": "pour", "params": ["liquid", "container"]},
+    {"name": "dispose", "params": ["target"]},
+    {"name": "sweep", "params": ["target"]},
+    {"name": "vacuum", "params": ["target"]},
+    {"name": "mop", "params": ["target"]},
+    {"name": "warn_wet_floor", "params": ["target"]},
+    {"name": "restock", "params": ["item", "location"]},
+    {"name": "greet", "params": ["target"]},
+    {"name": "take_order", "params": ["target"]},
+    {"name": "offer", "params": ["item", "recipient"]},
+    {"name": "deliver", "params": ["item", "recipient"]},
 )
 
 # Verbs for a fixed-base manipulator: manipulation + appliance use only. A bolted
@@ -62,6 +78,10 @@ _ARM_VERBS: tuple[dict[str, Any], ...] = (
         "params": ["target", "program"],
         "appliance_types": ["washer", "stove", "microwave", "dishwasher"],
     },
+    # in-place task-family manipulation only — no locomotion-dependent verbs
+    {"name": "wipe", "params": ["target"]},
+    {"name": "pour", "params": ["liquid", "container"]},
+    {"name": "offer", "params": ["item", "recipient"]},
 )
 
 # Builtin model profiles (stdlib dicts — the canonical no-dependency source).

@@ -48,11 +48,9 @@ def test_unsupported_verb_raises_programmer_error() -> None:
 def test_custom_manifest_overrides_default() -> None:
     body = MockBody(g1d_manifest())
     assert body.capabilities().verb_names() == {
-        "navigate",
-        "grasp",
-        "place",
-        "detect",
-        "open_door",
-        "charging",
+        "navigate", "grasp", "place", "detect", "open_door", "charging",
         "operate_appliance",
+        # task-family verbs (step 1)
+        "present", "wipe", "pour", "dispose", "sweep", "vacuum", "mop",
+        "warn_wet_floor", "restock", "greet", "take_order", "offer", "deliver",
     }

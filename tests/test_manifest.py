@@ -17,18 +17,16 @@ def test_builtin_profiles_listed() -> None:
     assert set(list_profiles()) == {"g1d", "h1", "gr1", "arm6"}
 
 
-def test_g1d_is_wheeled_with_seven_verbs() -> None:
+def test_g1d_is_wheeled_with_the_common_verbs() -> None:
     m = load_manifest("g1d")
     assert m.body_profile.base_type == "wheeled"
     assert m.body_profile.profile_id == "g1d"
     assert m.verb_names() == {
-        "navigate",
-        "grasp",
-        "place",
-        "detect",
-        "open_door",
-        "charging",
+        "navigate", "grasp", "place", "detect", "open_door", "charging",
         "operate_appliance",
+        # task-family verbs (step 1)
+        "present", "wipe", "pour", "dispose", "sweep", "vacuum", "mop",
+        "warn_wet_floor", "restock", "greet", "take_order", "offer", "deliver",
     }
 
 
@@ -94,3 +92,12 @@ def test_load_vendor_yaml_file() -> None:
     assert m.body_profile.profile_id == "fourier_gr1"
     assert m.body_profile.base_type == "legged"
     assert "climb_stair" in m.verb_names()
+
+
+def test_arm6_family_verbs_are_manipulation_only() -> None:
+    m = load_manifest("arm6")
+    verbs = m.verb_names()
+    # in-place task-family manipulation is available on a fixed base
+    assert {"wipe", "pour", "offer"} <= verbs
+    # locomotion-dependent family verbs stay off a bolted-down arm
+    assert not ({"sweep", "mop", "vacuum", "present", "deliver"} & verbs)
