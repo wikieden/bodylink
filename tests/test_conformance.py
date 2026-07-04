@@ -16,7 +16,9 @@ def test_reference_bodies_pass_conformance(profile: str) -> None:
     passed = check_executor_adapter(body)
     assert "node_ids_echoed_B9" in passed
     assert "undeclared_verb_refused_D3" in passed
-    assert len(passed) == 5
+    # MockBody ships the T5-8 handshake, so the optional cancel tier runs too
+    assert "cancel_handshake_honored_T5_8" in passed
+    assert len(passed) == 6
 
 
 def test_conformance_catches_missing_node_echo() -> None:

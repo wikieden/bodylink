@@ -14,6 +14,9 @@ The contract checked:
   * the terminal update **echoes the subtask's node ids** verbatim (B9).
   * an **undeclared verb is refused** (raises), never silently dispatched (D3).
   * a `FAILED` terminal carries a **typed** `ErrorCode` (B3), never a bare string.
+  * OPTIONAL (T5-8): a body shipping the `cancel` preemption handshake honors it —
+    a cancelled in-flight dispatch terminates `ABORTED` with the B9 echo intact.
+    Bodies without the handshake pass (the brain falls back to between-step D-E).
 
 Pure-stdlib; importable outside pytest. Returns the list of passed check names;
 raises `AssertionError` (with a reason) on the first violation.
@@ -78,5 +81,19 @@ def check_executor_adapter(
         refused = True
     assert refused, f"adapter accepted undeclared verb {bogus!r} (D3 violation)"
     passed.append("undeclared_verb_refused_D3")
+
+    # T5-8 (optional tier): bodies that ship the preemption handshake must honor it
+    if callable(getattr(adapter, "cancel", None)):
+        probe2 = SubTask(id="conformance-2", verb=verb, target_node_ids=sample_node_ids)
+        stream = adapter.dispatch(probe2)
+        first = next(stream)
+        assert not first.status.is_terminal, "stream terminated before any preemption window"
+        adapter.cancel(probe2.id)  # type: ignore[attr-defined]
+        tail = list(stream)
+        assert tail and tail[-1].status == TaskStatus.ABORTED, (
+            "cancel() was not honored: stream did not terminate ABORTED"
+        )
+        assert tail[-1].touched_node_ids == sample_node_ids, "B9 echo lost on abort"
+        passed.append("cancel_handshake_honored_T5_8")
 
     return passed

@@ -120,13 +120,47 @@ class SimDeviceAdapter(BaseExecutorAdapter):
 
         # Evenly spaced intermediate progress (e.g. steps=2 → 0.33, 0.66); the
         # terminal carries 1.0. Monotonically increasing toward, but below, 1.0.
+        # Between updates the T5-8 preemption handshake is honored — this is the
+        # window a real actuator checks its cancel/hold lines.
         for step in range(1, self._progress_steps + 1):
+            aborted = yield from self._preemption_window(subtask, ids)
+            if aborted:
+                return
             progress = step / (self._progress_steps + 1)
             yield StatusUpdate(
                 "", subtask.id, TaskStatus.RUNNING, progress=progress, touched_node_ids=ids
             )
 
+        aborted = yield from self._preemption_window(subtask, ids)
+        if aborted:
+            return
         yield self._terminal(subtask, ids)
+
+    def _preemption_window(
+        self, subtask: SubTask, ids: tuple[int, ...]
+    ) -> Iterator[StatusUpdate]:
+        """Honor pause/cancel (T5-8): stream PAUSED while held; ABORT on cancel.
+
+        A generator helper for ``yield from``: its return value is True when the
+        subtask was cancelled (the caller must stop streaming).
+        """
+        while subtask.id in self._pause_requested and subtask.id not in self._cancel_requested:
+            yield StatusUpdate(
+                "", subtask.id, TaskStatus.PAUSED, progress=0.0, touched_node_ids=ids
+            )
+        if subtask.id in self._cancel_requested:
+            self._cancel_requested.discard(subtask.id)
+            self._pause_requested.discard(subtask.id)
+            yield StatusUpdate(
+                "",
+                subtask.id,
+                TaskStatus.ABORTED,
+                progress=0.0,
+                touched_node_ids=ids,
+                message="cancelled mid-motion (preemption handshake)",
+            )
+            return True
+        return False
 
     def _terminal(self, subtask: SubTask, ids: tuple[int, ...]) -> StatusUpdate:
         """Resolve the terminal update: injected fault, else backend outcome."""

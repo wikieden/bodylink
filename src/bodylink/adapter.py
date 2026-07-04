@@ -39,18 +39,36 @@ class BaseExecutorAdapter:
 
     def __init__(self, manifest: CapabilityManifest) -> None:
         self._manifest = manifest
+        # T5-8 preemption handshake (closes D-E): request flags honored at the
+        # stream's next update boundary. Consumer-stepped — no threads.
+        self._cancel_requested: set[str] = set()
+        self._pause_requested: set[str] = set()
 
     def capabilities(self) -> CapabilityManifest:
         """Return this body's two-tier capability manifest (D3)."""
         return self._manifest
 
+    def cancel(self, subtask_id: str) -> None:
+        """Request abort of an in-flight subtask (honored at the next update)."""
+        self._cancel_requested.add(subtask_id)
+
+    def pause(self, subtask_id: str) -> None:
+        """Hold an in-flight subtask: the stream yields PAUSED until resumed."""
+        self._pause_requested.add(subtask_id)
+
+    def resume(self, subtask_id: str) -> None:
+        """Release a paused subtask so its stream may proceed to execution."""
+        self._pause_requested.discard(subtask_id)
+
     def dispatch(self, subtask: SubTask) -> Iterator[StatusUpdate]:
         """Gate the verb (D3), stream RUNNING → terminal, echo node ids (B9).
 
         Refuses an undeclared verb with `UnsupportedVerbError`. Yields a RUNNING
-        update, then the terminal `StatusUpdate` from `_execute`, re-stamping its
+        update, then — after honoring any pause/cancel request (T5-8) — the
+        terminal `StatusUpdate` from `_execute`, re-stamping its
         `touched_node_ids` with the subtask's so the echo (B9) is guaranteed even
-        if a subclass forgets.
+        if a subclass forgets. A cancelled subtask terminates ABORTED and its
+        `_execute` never runs; the flag is consumed (one-shot).
         """
         verb = subtask.verb
         if not self._manifest.supports(verb):
@@ -59,6 +77,22 @@ class BaseExecutorAdapter:
             )
         ids = subtask.target_node_ids
         yield StatusUpdate("", subtask.id, TaskStatus.RUNNING, progress=0.0, touched_node_ids=ids)
+        while subtask.id in self._pause_requested and subtask.id not in self._cancel_requested:
+            yield StatusUpdate(
+                "", subtask.id, TaskStatus.PAUSED, progress=0.0, touched_node_ids=ids
+            )
+        if subtask.id in self._cancel_requested:
+            self._cancel_requested.discard(subtask.id)
+            self._pause_requested.discard(subtask.id)
+            yield StatusUpdate(
+                "",
+                subtask.id,
+                TaskStatus.ABORTED,
+                progress=0.0,
+                touched_node_ids=ids,
+                message="cancelled before execution (preemption handshake)",
+            )
+            return
         terminal = self._execute(subtask)
         if terminal.touched_node_ids != ids:
             # guarantee the B9 echo regardless of what the subclass returned
